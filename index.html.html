@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kono Ramen - База Товаров</title>
+    <!-- Подключение Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Подключение библиотеки для локальной генерации QR-кодов -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    
+    <style>
+        /* Установка шрифта Inter и базовые стили Kono Ramen */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #FAFAFA; /* Мягкий светлый фон */
+        } 
+        
+        /* Фирменные цвета Kono (Усиленный красный для акцентов) */
+        .kono-primary { background-color: #CC3333; }
+        .kono-primary-text { color: #CC3333; }
+        .kono-border-red { border-color: #CC3333; }
+
+        /* Профессиональная тень для карточек */
+        .card-premium-shadow { 
+            box-shadow: 0 15px 35px -5px rgba(204, 51, 51, 0.08), 0 5px 15px -3px rgba(0, 0, 0, 0.05); 
+        }
+        
+        /* Улучшенный стиль основной кнопки */
+        .btn-primary { 
+            @apply px-6 py-3 font-bold rounded-xl text-white kono-primary hover:bg-red-700 transition duration-300 transform hover:scale-[1.01] shadow-lg shadow-red-500/30;
+        }
+        /* Улучшенный стиль полей ввода */
+        .input-field {
+            @apply p-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#CC3333] focus:border-[#CC3333] text-gray-800 transition duration-150 w-full shadow-sm;
+        }
+
+        /* Стили для центрирования QR-кода */
+        .qr-container > div {
+            margin: 0 auto;
+        }
+    </style>
+    
+    <script>
+        // --- КОНФИГУРАЦИЯ И ДАННЫЕ (Без изменений) ---
+        const ADMIN_PASSWORD = 'kono1995'; 
+        const CATEGORIES = [
+            'Все Товары', 
+            'Горячие блюда СТМ', 
+            'Закуски СТМ', 
+            'Салаты СТМ', 
+            'Топпинги СТМ', 
+            'Десерты СТМ', 
+            'Напитки Кофейные/Чай',
+            'Молочные напитки СТМ',
+            'Разливные напитки СТМ'
+        ];
+        
+        let inventoryData = [
+            // Горячие блюда СТМ (7 позиций)
+            { id: '67489', articleId: '11190', name: 'Рис Карри райс', category: 'Горячие блюда СТМ', price: 330.00, barcode: '2167489000018' },
+            { id: '95833', articleId: '11231', name: 'Рис с Говядиной пульгоги', category: 'Горячие блюда СТМ', price: 350.00, barcode: '2195833000018' },
+            { id: '85043', articleId: '11232', name: 'Рис с Креветкой', category: 'Горячие блюда СТМ', price: 330.00, barcode: '2185043000014' },
+            { id: '67492', articleId: '11233', name: 'Рис с Курицей и грибами', category: 'Горячие блюда СТМ', price: 330.00, barcode: '2167492000012' },
+            { id: '67593', articleId: '11234', name: 'Рис с курицей и сладким чили', category: 'Горячие блюда СТМ', price: 330.00, barcode: '2167593000010' },
+            { id: '67493', articleId: '11239', name: 'Рис с курицей терияки и брокколи', category: 'Горячие блюда СТМ', price: 330.00, barcode: '2167493000011' },
+            { id: '67573', articleId: '11235', name: 'Рис с курицей тонкацу', category: 'Горячие блюда СТМ', price: 270.00, barcode: '2167573000016' },
+            
+            // Закуски СТМ (2 позиций)
+            { id: '69937', articleId: '549', name: 'Кимпаб с говядиной Kono', category: 'Закуски СТМ', price: 330.00, barcode: '2169937000014' }, 
+            { id: '94737', articleId: '551', name: 'Кимпаб с тунцом Kono', category: 'Закуски СТМ', price: 280.00, barcode: '2194737000018' }, 
+            
+            // Салаты СТМ (5 позиций)
+            { id: '75326', articleId: '12022', name: 'Греческий салат Kono', category: 'Салаты СТМ', price: 210.00, barcode: '2175326000015' },
+            { id: '65369', articleId: '12023', name: 'Зелёный салат Kono', category: 'Салаты СТМ', price: 190.00, barcode: '2165369000011' },
+            { id: '84016', articleId: '12024', name: 'Салат с курицей тонкацу Kono', category: 'Салаты СТМ', price: 250.00, barcode: '2184016000013' },
+            { id: '68301', articleId: '12025', name: 'Салат с тунцом Kono', category: 'Салаты СТМ', price: 250.00, barcode: '2168301000018' },
+            { id: '67305', articleId: '12026', name: 'Салат Цезарь Kono', category: 'Салаты СТМ', price: 250.00, barcode: '2167305000017' },
+
+            // Топпинги СТМ (28 позиций)
+            { id: '68417', articleId: '584', name: 'Топпинг бекон Kono', category: 'Топпинги СТМ', price: 55.00, barcode: '2168417000018' },
+            { id: '57402', articleId: '11915', name: 'Топпинг бобы Эдомаме Kono', category: 'Топпинги СТМ', price: 60.00, barcode: '2157402000010' },
+            { id: '68415', articleId: '583', name: 'Топпинг ветчина Kono', category: 'Топпинги СТМ', price: 85.00, barcode: '2168415000010' },
+            { id: '22737', articleId: '567', name: 'Топпинг говядина Kono', category: 'Топпинги СТМ', price: 135.00, barcode: '2122737000011' },
+            { id: '68432', articleId: '10653', name: 'Топпинг горошек Kono', category: 'Топпинги СТМ', price: 65.00, barcode: '2168432000017' },
+            { id: '26737', articleId: '572', name: 'Топпинг грибы эноки Kono', category: 'Топпинги СТМ', price: 85.00, barcode: '2126737000019' },
+            { id: '68516', articleId: '590', name: 'Топпинг дайкон Kono', category: 'Топпинги СТМ', price: 40.00, barcode: '2168516000018' },
+            { id: '56482', articleId: '12293', name: 'Топпинг Дамплинг жаренный Kono', category: 'Топпинги СТМ', price: 135.00, barcode: '2156482000019' },
+            { id: '68412', articleId: '581', name: 'Топпинг капуста кимчи Kono', category: 'Топпинги СТМ', price: 70.00, barcode: '2168412000013' },
+            { id: '39576', articleId: '11916', name: 'Топпинг крабовая палочка Kono', category: 'Топпинги СТМ', price: 50.00, barcode: '2139576000010' },
+            { id: '69771', articleId: '566', name: 'Топпинг креветки Kono', category: 'Топпинги СТМ', price: 135.00, barcode: '2169771000010' },
+            { id: '30485', articleId: '10654', name: 'Топпинг кукуруза Kono', category: 'Топпинги СТМ', price: 40.00, barcode: '2130485000016' },
+            { id: '68419', articleId: '585', name: 'Топпинг курица Kono', category: 'Топпинги СТМ', price: 65.00, barcode: '2168419000016' },
+            { id: '69734', articleId: '11421', name: 'Топпинг Лук жаренный Kono', category: 'Топпинги СТМ', price: 40.00, barcode: '2169734000019' },
+            { id: '96947', articleId: '10662', name: 'Топпинг Лук зелёный Kono', category: 'Топпинги СТМ', price: 40.00, barcode: '2196947000017' },
+            { id: '64240', articleId: '12111', name: 'Топпинг микс сыра Kono', category: 'Топпинги СТМ', price: 65.00, barcode: '2164240000010' },
+            { id: '78122', articleId: '571', name: 'Топпинг моцарелла стики Kono', category: 'Топпинги СТМ', price: 80.00, barcode: '2178122000012' },
+            { id: '69939', articleId: '565', name: 'Топпинг нори, кунжут Kono', category: 'Топпинги СТМ', price: 40.00, barcode: '2169939000012' },
+            { id: '59483', articleId: '10020', name: 'Топпинг Сливочный плавленный сыр', category: 'Топпинги СТМ', price: 50.00, barcode: '2159483000019' },
+            { id: '69991', articleId: '576', name: 'Топпинг сосиски мини Kono', category: 'Топпинги СТМ', price: 70.00, barcode: '2169991000012' },
+            { id: '64246', articleId: '12357', name: 'Топпинг Стружка тунца Kono', category: 'Топпинги СТМ', price: 40.00, barcode: '2164246000014' },
+            { id: '69936', articleId: '10655', name: 'Топпинг сыр плавленный с ветчиной Kono', category: 'Топпинги СТМ', price: 65.00, barcode: '2169936000015' },
+            { id: '53147', articleId: '10658', name: 'Топпинг сыр плавленный с грибами Kono', category: 'Топпинги СТМ', price: 65.00, barcode: '2153147000018' },
+            { id: '68454', articleId: '579', name: 'Топпинг сыр сулугуни Kono', category: 'Топпинги СТМ', price: 80.00, barcode: '2168454000019' },
+            { id: '79340', articleId: '12032', name: 'Топпинг Сырный порошок Kono', category: 'Топпинги СТМ', price: 40.00, barcode: '2179340000013' },
+            { id: '77737', articleId: '575', name: 'Топпинг токпокки Kono', category: 'Топпинги СТМ', price: 85.00, barcode: '2177737000011' },
+            { id: '58490', articleId: '11985', name: 'Топпинг Шарики Том Ям Kono', category: 'Топпинги СТМ', price: 50.00, barcode: '2158490000012' },
+            { id: '12345', articleId: '568', name: 'Топпинг яйцо маринованное Kono', category: 'Топпинги СТМ', price: 70.00, barcode: '2112345000015' },
+
+            // Десерты СТМ (9 позиций)
+            { id: '69797', articleId: '560', name: 'JIGGLY CAT Какао Kono', category: 'Десерты СТМ', price: 245.00, barcode: '2169797000018' },
+            { id: '14737', articleId: '562', name: 'Моти клубника Kono', category: 'Десерты СТМ', price: 215.00, barcode: '2114737000016' },
+            { id: '34797', articleId: '564', name: 'Моти орео Kono', category: 'Десерты СТМ', price: 215.00, barcode: '2134797000016' },
+            { id: '86473', articleId: '11250', name: 'Моти сникерс Kono', category: 'Десерты СТМ', price: 215.00, barcode: '2186473000018' },
+            { id: '59688', articleId: '11249', name: 'Моти халва Kono', category: 'Десерты СТМ', price: 215.00, barcode: '2159688000012' },
+            { id: '40383', articleId: '10550', name: 'Паштел де ната Kono', category: 'Десерты СТМ', price: 130.00, barcode: '2140383000018' },
+            { id: '59382', articleId: '10127', name: 'Сендвич киви мандарин Kono', category: 'Десерты СТМ', price: 245.00, barcode: '2159382000011' },
+            { id: '58743', articleId: '11251', name: 'Сендвич клубника киви Kono', category: 'Десерты СТМ', price: 225.00, barcode: '2158743000011' },
+            { id: '86743', articleId: '11252', name: 'Сендвич клубника мандарин Kono', category: 'Десерты СТМ', price: 225.00, barcode: '2186743000014' },
+
+            // Напитки Кофейные/Чай (8 позиций)
+            { id: '67636', articleId: '1017', name: 'Американо 200мл', category: 'Напитки Кофейные/Чай', price: 120.00, barcode: '2167636000014' },
+            { id: '67637', articleId: '1018', name: 'Американо 300мл', category: 'Напитки Кофейные/Чай', price: 170.00, barcode: '2167637000013' },
+            { id: '67638', articleId: '1019', name: 'Капучино 200мл', category: 'Напитки Кофейные/Чай', price: 140.00, barcode: '2167638000012' },
+            { id: '67639', articleId: '1020', name: 'Капучино 300мл', category: 'Напитки Кофейные/Чай', price: 180.00, barcode: '2167639000011' },
+            { id: '67640', articleId: '1021', name: 'Латте 200мл', category: 'Напитки Кофейные/Чай', price: 140.00, barcode: '2167640000017' },
+            { id: '67641', articleId: '1022', name: 'Латте 300мл', category: 'Напитки Кофейные/Чай', price: 180.00, barcode: '2167641000016' },
+            { id: '69499', articleId: '10866', name: 'Чай в ассортименте', category: 'Напитки Кофейные/Чай', price: 50.00, barcode: '2169499000019' },
+            { id: '67635', articleId: '1016', name: 'Эспрессо 35мл', category: 'Напитки Кофейные/Чай', price: 80.00, barcode: '2167635000015' },
+
+            // Молочные напитки СТМ (4 позиции)
+            { id: '84737', articleId: '557', name: 'Банановое молоко Kono', category: 'Молочные напитки СТМ', price: 185.00, barcode: '2184737000019' },
+            { id: '73802', articleId: '12109', name: 'Кокосовое молоко Kono', category: 'Молочные напитки СТМ', price: 185.00, barcode: '2173802000016' },
+            { id: '87543', articleId: '12108', name: 'Молоко шоколадное печенье Kono', category: 'Молочные напитки СТМ', price: 185.00, barcode: '2187543000013' },
+            { id: '23863', articleId: '12107', name: 'Персиковое молоко Kono', category: 'Молочные напитки СТМ', price: 185.00, barcode: '2123863000012' },
+
+            // Разливные напитки СТМ (7 позиций)
+            { id: '56394', articleId: '12058', name: 'Напиток газ. Апельсин Kono', category: 'Разливные напитки СТМ', price: 180.00, barcode: '2156394000015' },
+            { id: '64324', articleId: '12054', name: 'Напиток газ. Кола Kono', category: 'Разливные напитки СТМ', price: 180.00, barcode: '2164324000011' },
+            { id: '36189', articleId: '12059', name: 'Напиток газ. Лимон-лайм Kono', category: 'Разливные напитки СТМ', price: 180.00, barcode: '2136189000017' },
+            { id: '56329', articleId: '12056', name: 'Напиток газ. Мохито Kono', category: 'Разливные напитки СТМ', price: 180.00, barcode: '2156329000011' },
+            { id: '57892', articleId: '12044', name: 'Чай Тайский Молочный Kono', category: 'Разливные напитки СТМ', price: 180.00, barcode: '2157892000019' },
+            { id: '63261', articleId: '12038', name: 'Чай холодный Зелёный Персиковый Kono', category: 'Разливные напитки СТМ', price: 180.00, barcode: '2163261000016' },
+            { id: '62468', articleId: '12037', name: 'Чай холодный Чёрный Малиновый Kono', category: 'Разливные напитки СТМ', price: 180.00, barcode: '2162468000010' },
+        ]; 
+        
+        let currentCategory = 'Все Товары'; 
+        let isAdminLoggedIn = false; 
+        
+        // --- DOM REFERENCES ---
+        let mainContentArea, searchResultContainer, statusMessage, adminStatusMessage;
+
+        function initializeDOMRefs() {
+            mainContentArea = document.getElementById('main-content-area');
+            searchResultContainer = document.getElementById('search-result-container');
+            statusMessage = document.getElementById('status-message'); // Теперь находится в шапке
+            adminStatusMessage = document.getElementById('admin-status-message');
+            
+            // Настройка слушателей событий
+            document.getElementById('search-button')?.addEventListener('click', handleSearch);
+            document.getElementById('clear-search-button')?.addEventListener('click', clearSearch); 
+            document.getElementById('search-input')?.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleSearch();
+            });
+            document.getElementById('admin-login-form')?.addEventListener('submit', handleAdminLogin);
+            document.getElementById('add-product-form')?.addEventListener('submit', addProduct);
+        }
+
+        function setupApp() {
+            initializeDOMRefs();
+            renderCategoryFilter();
+            renderAdminControls();
+            loadProducts(currentCategory);
+            updateStatus('Готово. Загружено ' + inventoryData.length + ' товаров.');
+        }
+
+        // --- УТИЛИТЫ ---
+
+        function updateStatus(message, isError = false) {
+            if (statusMessage) {
+                statusMessage.textContent = message;
+                // Более компактное отображение статуса в шапке
+                statusMessage.className = `text-sm font-medium ${isError ? 'text-red-600' : 'text-gray-500'}`;
+            }
+        }
+        
+        function updateAdminStatus(message, classes) {
+            if (adminStatusMessage) {
+                adminStatusMessage.className = `p-3 mt-4 rounded-lg text-sm font-medium ${classes} animate-pulse`;
+                adminStatusMessage.textContent = message;
+                setTimeout(() => {
+                    if (adminStatusMessage) adminStatusMessage.className = '';
+                }, 6000);
+            }
+        }
+        
+        // --- РЕНДЕРИНГ ИНТЕРФЕЙСА ---
+        
+        function renderProductCard(product) {
+            // УЛУЧШЕННЫЙ ДИЗАЙН КАРТОЧКИ
+            return `
+                <div 
+                    class="bg-white p-5 rounded-xl card-premium-shadow flex flex-col items-start text-left transition duration-300 cursor-pointer border-l-4 kono-border-red hover:bg-gray-50 transform hover:translate-x-1"
+                    onclick="viewProductDetails('${product.id}')"
+                >
+                    <p class="text-xs text-gray-500 mb-1 font-semibold uppercase">${product.category}</p> 
+                    <p class="text-2xl font-extrabold kono-primary-text mt-1 mb-2">${product.price.toLocaleString('ru-RU')} ₽</p>
+                    <p class="text-lg font-semibold text-gray-800 line-clamp-2">${product.name}</p>
+                    <p class="text-xs text-gray-400 font-mono mt-3">Код: ${product.id.toUpperCase()}</p>
+                </div>
+            `;
+        }
+
+
+        function renderCategoryFilter() {
+            const container = document.getElementById('category-filter-container');
+            if (!container) return;
+            container.innerHTML = ''; 
+            
+            CATEGORIES.forEach(category => {
+                const isActive = category === currentCategory;
+                const button = document.createElement('button');
+                button.textContent = category;
+                // СТИЛЬ ЧИПОВ/КНОПОК КАТЕГОРИЙ
+                button.className = `px-4 py-2 rounded-full font-semibold text-sm transition duration-200 whitespace-nowrap shadow-md hover:shadow-lg
+                    ${isActive 
+                        ? 'kono-primary text-white shadow-red-500/40' 
+                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-red-50 hover:border-red-400'
+                    }`;
+
+                button.addEventListener('click', () => {
+                    currentCategory = category;
+                    // Очищаем результаты поиска при смене категории
+                    if (searchResultContainer) searchResultContainer.innerHTML = ''; 
+                    renderCategoryFilter();
+                    loadProducts(category);
+                });
+                container.appendChild(button);
+            });
+        }
+
+        function renderProductGrid(products) {
+            if (!mainContentArea) return;
+            
+            if (products.length === 0) {
+                mainContentArea.innerHTML = `
+                    <div class="p-8 text-center bg-white rounded-xl card-premium-shadow border-2 border-dashed kono-border-red">
+                        <svg class="mx-auto h-12 w-12 kono-primary-text" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <h3 class="mt-2 text-lg font-semibold text-gray-900">Товары не найдены</h3>
+                        <p class="mt-1 text-sm text-gray-500">
+                            ${currentCategory === 'Все Товары' 
+                                ? 'База данных пуста. Войдите в панель управления ниже, чтобы добавить первый товар.'
+                                : `В категории "${currentCategory}" нет данных.`
+                            }
+                        </p>
+                    </div>`;
+                return;
+            }
+
+            const gridHtml = products.map(product => renderProductCard(product)).join('');
+
+            mainContentArea.innerHTML = `
+                <h2 class="text-2xl font-extrabold text-gray-800 mb-4 border-l-4 pl-3 kono-border-red">
+                    Товары в категории 
+                    <span class="font-normal text-gray-500 text-xl">"${currentCategory}"</span>
+                </h2>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    ${gridHtml}
+                </div>
+            `;
+        }
+        
+        function renderSearchResult(products, query) {
+             if (!searchResultContainer) return;
+             
+             // УЛУЧШЕННЫЙ БЛОК РЕЗУЛЬТАТОВ ПОИСКА
+             searchResultContainer.innerHTML = `
+                <div class="p-6 md:p-8 bg-white rounded-xl card-premium-shadow border-l-4 border-amber-500">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">
+                        Результаты поиска 
+                        <span class="text-gray-500 font-normal text-lg">("${query}")</span>
+                    </h2>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                        ${products.map(product => renderProductCard(product)).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderNoResults(query) {
+             if (!searchResultContainer) return;
+             searchResultContainer.innerHTML = `
+                    <div class="p-6 text-center bg-white rounded-xl card-premium-shadow border-2 border-dashed border-gray-300">
+                        <h3 class="mt-2 text-xl font-semibold text-gray-900">Ничего не найдено по запросу "${query}"</h3>
+                        <p class="mt-1 text-sm text-gray-500">Попробуйте другой запрос или посмотрите список по категориям.</p>
+                    </div>`;
+        }
+        
+        function renderSingleProduct(product) {
+            if (!searchResultContainer) return;
+            
+            const qrContainerId = `qr-${product.id}`;
+            
+            const adminButtons = isAdminLoggedIn ? `
+                <div class="flex justify-end pt-6 border-t border-gray-200 mt-6">
+                    <button 
+                        onclick="deleteProduct('${product.id}')"
+                        class="px-6 py-3 bg-gray-100 text-red-600 font-bold rounded-lg hover:bg-red-100 transition duration-300 flex items-center justify-center border border-red-300"
+                    >
+                        <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        Удалить Товар
+                    </button>
+                </div>
+            ` : '';
+
+            // УЛУЧШЕННЫЙ БЛОК ДЕТАЛЕЙ
+            searchResultContainer.innerHTML = `
+                <div class="p-6 md:p-10 space-y-6 bg-white rounded-xl card-premium-shadow transition-all duration-300 kono-border-red border-4">
+                    <button onclick="clearSearch()" class="text-sm font-medium text-gray-500 hover:text-[#CC3333] mb-4 flex items-center transition duration-200">
+                         <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                         Назад
+                    </button>
+                    <h2 class="text-4xl font-extrabold text-gray-800 border-b-2 kono-border-red pb-4">${product.name}</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Блок QR-КОДА (Слева) -->
+                        <div class="flex flex-col items-center justify-center p-6 bg-gray-50 rounded-xl border-2 border-gray-200 qr-container">
+                            <h3 class="text-lg font-bold mb-4 text-gray-700">QR-Код <span class="text-sm font-normal">(Штрих код)</span></h3>
+                            <div id="${qrContainerId}" class="bg-white rounded-lg border border-gray-100 p-3 shadow-inner"></div>
+                        </div>
+
+                        <!-- Детали товара (Центр) -->
+                        <div class="space-y-4 md:col-span-2 p-4">
+                            <h3 class="text-2xl font-extrabold kono-primary-text pb-2">${product.price.toLocaleString('ru-RU')} ₽</h3>
+                            ${renderDetailItem('Категория', product.category, 'text-red-700 font-bold text-lg')}
+                            ${renderDetailItem('Код Товара (ID)', product.id.toUpperCase(), 'font-mono text-xl')}
+                            ${renderDetailItem('Артикул', product.articleId, 'font-mono text-xl')}
+                            ${renderDetailItem('Штрих код', product.barcode, 'font-mono text-xl')}
+                        </div>
+                    </div>
+
+                    ${adminButtons}
+                </div>
+            `;
+            
+            setTimeout(() => initializeQrCode(qrContainerId, product.barcode), 50);
+            
+            if(mainContentArea) mainContentArea.innerHTML = ''; 
+        }
+
+        function renderDetailItem(label, value, valueClasses) {
+            return `
+                <div class="flex flex-col border-b border-gray-100 pb-2">
+                    <span class="text-gray-500 font-medium text-sm">${label}:</span> 
+                    <span class="text-gray-700 ${valueClasses}">${value}</span>
+                </div>
+            `;
+        }
+
+        function initializeQrCode(containerId, barcodeValue) {
+            const element = document.getElementById(containerId);
+            if (element && typeof QRCode !== 'undefined') {
+                try {
+                    element.innerHTML = ''; 
+                    new QRCode(element, {
+                        text: barcodeValue, 
+                        width: 160,
+                        height: 160,
+                        colorDark : "#CC3333", // Kono Red
+                        colorLight : "#ffffff",
+                        correctLevel : QRCode.CorrectLevel.H
+                    });
+                } catch (e) {
+                    console.error("Ошибка при генерации QR-кода:", e);
+                    element.innerHTML = '<div class="text-xs text-red-600 text-center p-2">Ошибка QR.</div>';
+                }
+            }
+        }
+        
+        // --- ЛОГИКА АДМИНИСТРИРОВАНИЯ И CRUD (Без изменений) ---
+        
+        function renderAdminControls() {
+            const adminLogin = document.getElementById('admin-login-form');
+            const adminControls = document.getElementById('admin-controls-wrapper');
+            const adminHeader = document.getElementById('admin-header');
+
+            if (!adminLogin || !adminControls || !adminHeader) return;
+
+            if (isAdminLoggedIn) {
+                adminHeader.textContent = 'Панель Управления (АВТОРИЗОВАН)';
+                adminLogin.classList.add('hidden');
+                adminControls.classList.remove('hidden');
+            } else {
+                adminHeader.textContent = 'Панель Управления';
+                adminLogin.classList.remove('hidden');
+                adminControls.classList.add('hidden');
+            }
+        }
+
+        function handleAdminLogin(e) {
+            e.preventDefault();
+            const passwordInput = document.getElementById('admin-password-input');
+            const password = passwordInput ? passwordInput.value : '';
+
+            if (password === ADMIN_PASSWORD) {
+                isAdminLoggedIn = true;
+                renderAdminControls();
+                updateAdminStatus("Вход выполнен успешно!", 'bg-green-100 text-green-800');
+                if (passwordInput) passwordInput.value = '';
+            } else {
+                isAdminLoggedIn = false;
+                updateAdminStatus(`Неверный пароль. Для теста используйте: ${ADMIN_PASSWORD}`, 'bg-red-100 text-red-800');
+            }
+        }
+
+        function addProduct(e) {
+            e.preventDefault();
+            if (!isAdminLoggedIn) return updateAdminStatus("Необходимо войти в систему.", 'bg-red-100 text-red-800');
+
+            const form = e.target;
+            const newId = form.elements['admin-id'].value.trim(); 
+
+            if (inventoryData.some(p => p.id === newId)) {
+                return updateAdminStatus('Ошибка: Товар с таким КОДОМ уже существует.', 'bg-yellow-100 text-yellow-800');
+            }
+
+            const newArticleId = form.elements['admin-article-id'].value.trim();
+            const newBarcode = form.elements['admin-barcode'].value.trim();
+            
+            if (inventoryData.some(p => p.articleId === newArticleId || p.barcode === newBarcode)) {
+                return updateAdminStatus('Ошибка: Товар с таким артикулом или штрихкодом уже существует.', 'bg-yellow-100 text-yellow-800');
+            }
+            
+            const newProduct = {
+                id: newId, 
+                articleId: newArticleId,
+                name: form.elements['admin-name'].value.trim(),
+                category: form.elements['admin-category'].value.trim(),
+                price: parseFloat(form.elements['admin-price'].value.trim()),
+                barcode: newBarcode,
+            };
+
+            if (isNaN(newProduct.price) || newProduct.price <= 0) {
+                 return updateAdminStatus('Ошибка: Цена должна быть положительным числом.', 'bg-yellow-100 text-yellow-800');
+            }
+
+            inventoryData.push(newProduct);
+            updateAdminStatus(`Товар "${newProduct.name}" успешно добавлен.`, 'bg-green-100 text-green-800');
+            form.reset();
+            loadProducts(currentCategory);
+        }
+        
+        function deleteProduct(id) {
+            if (!isAdminLoggedIn) return updateStatus('Только администраторы могут удалять товары.', true);
+            
+            const product = inventoryData.find(p => p.id === id);
+            if (!product) return updateStatus(`Ошибка: Товар с ID ${id} не найден.`, true);
+
+            if (confirm(`Вы уверены, что хотите удалить товар "${product.name}" (ID: ${id})?`)) { 
+                const productIndex = inventoryData.findIndex(p => p.id === id);
+                if (productIndex !== -1) {
+                    inventoryData.splice(productIndex, 1);
+                    updateStatus(`Товар "${product.name}" успешно удален.`, false);
+                    loadProducts(currentCategory);
+                    if(searchResultContainer) searchResultContainer.innerHTML = '';
+                } 
+            }
+        }
+        
+        // --- ЛОГИКА ПРОСМОТРА (Без изменений) ---
+
+        function loadProducts(category) {
+            if (searchResultContainer) searchResultContainer.innerHTML = '';
+            
+            let products = category === 'Все Товары' 
+                ? inventoryData
+                : inventoryData.filter(p => p.category === category);
+
+            renderProductGrid(products);
+            updateStatus(`Показано ${products.length} видов товаров в категории "${category}".`);
+        }
+
+        function viewProductDetails(id) {
+            const foundProduct = inventoryData.find(p => p.id === id);
+            if (foundProduct) {
+                renderSingleProduct(foundProduct);
+                updateStatus(`Показаны детали товара: ${foundProduct.name}`);
+            } else {
+                updateStatus(`Ошибка: Товар с ID ${id} не найден.`, true);
+            }
+        }
+        
+        function clearSearch() {
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) searchInput.value = ''; 
+            
+            loadProducts(currentCategory); 
+            
+            updateStatus('Поиск очищен. Показаны товары по текущей категории.');
+        }
+
+
+        function handleSearch() {
+            const searchInput = document.getElementById('search-input');
+            const queryValue = searchInput?.value.trim().toLowerCase();
+            
+            if (!queryValue) {
+                clearSearch(); 
+                return;
+            }
+            
+            const results = inventoryData.filter(product => {
+                const query = queryValue;
+                
+                const nameMatch = product.name.toLowerCase().includes(query);
+                const idMatch = product.id.toLowerCase().includes(query);
+                const articleMatch = product.articleId.toLowerCase().includes(query);
+                const barcodeMatch = product.barcode.includes(query);
+                const categoryMatch = product.category.toLowerCase().includes(query);
+
+                return idMatch || articleMatch || barcodeMatch || nameMatch || categoryMatch; 
+            });
+
+            if (mainContentArea) mainContentArea.innerHTML = ''; 
+
+            if (results.length > 0) {
+                renderSearchResult(results, searchInput.value);
+                updateStatus(`Найдено ${results.length} товаров по запросу "${searchInput.value}".`);
+            } else {
+                renderNoResults(searchInput.value);
+                updateStatus(`Товар по запросу "${searchInput.value}" не найден.`, true);
+            }
+        }
+
+        window.onload = setupApp;
+
+    </script>
+</head>
+<body class="p-4 md:p-6 min-h-screen">
+    <div class="max-w-6xl mx-auto pb-16">
+        
+        <!-- КОМПАКТНЫЙ ЗАГОЛОВОК -->
+        <header class="mb-6 p-4 bg-white rounded-xl shadow-md border-b-2 kono-border-red flex justify-between items-center">
+            <h1 class="text-3xl font-extrabold kono-primary-text tracking-wider">KONO</h1>
+            <p id="status-message" class="text-sm text-gray-500"></p>
+        </header>
+        
+        <!-- Блок Поиска (УЛУЧШЕННЫЙ) -->
+        <div class="bg-white p-6 rounded-xl card-premium-shadow mb-8 border border-gray-100">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Быстрый Поиск Товара</h2>
+            <div class="flex flex-col sm:flex-row gap-3">
+                <input 
+                    type="text" 
+                    id="search-input" 
+                    placeholder="ID, Артикул, Название, Категория или Штрих код"
+                    class="flex-grow input-field"
+                >
+                <button 
+                    id="search-button" 
+                    class="w-full sm:w-auto btn-primary flex items-center justify-center py-3"
+                >
+                    <svg class="w-5 h-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    Найти
+                </button>
+                <button 
+                    id="clear-search-button" 
+                    class="w-full sm:w-fit px-4 py-3 text-sm font-semibold rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 transition duration-300"
+                >
+                    <svg class="w-4 h-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    Сброс
+                </button>
+            </div>
+        </div>
+        
+        <!-- Результаты поиска / Детали товара -->
+        <div id="search-result-container" class="space-y-8 mb-8">
+            <!-- Здесь будут отображаться результаты поиска или детали товара -->
+        </div>
+
+        <!-- Блок Выбора Категорий -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold text-gray-800 mb-3">Фильтр Каталога</h2>
+            <div id="category-filter-container" class="flex flex-nowrap gap-2 overflow-x-auto pb-3 -mx-4 px-4 sm:mx-0 sm:px-0">
+                <!-- Кнопки категорий будут здесь -->
+            </div>
+        </div>
+
+        <!-- Контейнер для СЕТКИ ТОВАРОВ -->
+        <div id="main-content-area" class="space-y-6">
+            <!-- Здесь будет отображаться сетка товаров по текущей категории -->
+        </div>
+        
+        
+        <!-- Панель Администратора (ВИЗУАЛЬНО ОТДЕЛЕННАЯ) -->
+        <div class="mt-12 p-6 rounded-xl shadow-inner border-4 border-dashed border-gray-300 bg-gray-50">
+            <h2 id="admin-header" class="text-2xl font-extrabold text-gray-800 mb-6 kono-primary-text">Панель Управления</h2>
+            
+            <!-- 1. Форма Входа -->
+            <form id="admin-login-form" class="space-y-4">
+                <p class="text-sm text-gray-600">Для доступа к инструментам управления (Добавление/Удаление) введите пароль.</p>
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <input 
+                        type="password" 
+                        id="admin-password-input" 
+                        placeholder="Пароль администратора"
+                        required
+                        class="input-field"
+                    >
+                    <button type="submit" class="w-full sm:w-auto px-6 py-3 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 transition duration-300 flex items-center justify-center shadow-md">
+                        <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3v-1" /></svg>
+                        Авторизация
+                    </button>
+                </div>
+            </form>
+
+            <!-- 2. Форма Управления (Добавление Товара) -->
+            <div id="admin-controls-wrapper" class="hidden">
+                <h3 class="text-xl font-bold text-gray-700 mb-4 border-b pb-2">Добавить Новый Товар</h3>
+                <form id="add-product-form" class="space-y-4">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <!-- КОД (ID) -->
+                        <input type="text" id="admin-id" name="admin-id" placeholder="Код (ID, 5-6 цифр)" required class="input-field col-span-1">
+                        <input type="text" id="admin-article-id" name="admin-article-id" placeholder="Артикул" required class="input-field col-span-1">
+                        <input type="text" id="admin-barcode" name="admin-barcode" placeholder="Штрих код" required class="input-field col-span-2">
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="text" id="admin-name" name="admin-name" placeholder="Название товара/блюда" required class="input-field">
+                        <input type="number" id="admin-price" name="admin-price" placeholder="Цена (напр. 450)" required min="1" step="0.01" class="input-field">
+                    </div>
+
+                    <!-- Опции категорий -->
+                    <select id="admin-category" name="admin-category" required class="input-field appearance-none bg-white">
+                        <option value="" disabled selected>Выберите категорию</option>
+                        <option value="Горячие блюда СТМ">Горячие блюда СТМ</option>
+                        <option value="Закуски СТМ">Закуски СТМ</option>
+                        <option value="Салаты СТМ">Салаты СТМ</option>
+                        <option value="Топпинги СТМ">Топпинги СТМ</option>
+                        <option value="Десерты СТМ">Десерты СТМ</option>
+                        <option value="Напитки Кофейные/Чай">Напитки Кофейные/Чай</option>
+                        <option value="Молочные напитки СТМ">Молочные напитки СТМ</option>
+                        <option value="Разливные напитки СТМ">Разливные напитки СТМ</option>
+                    </select>
+                    
+                    <button type="submit" class="w-full btn-primary bg-green-600 hover:bg-green-700 flex items-center justify-center shadow-lg shadow-green-500/30">
+                        <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        Добавить Товар
+                    </button>
+                </form>
+            </div>
+            <div id="admin-status-message"></div>
+        </div>
+
+    </div>
+</body>
+</html>
